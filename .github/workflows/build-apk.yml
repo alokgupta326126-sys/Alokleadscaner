@@ -1,0 +1,35 @@
+name: Build Alok Lead Scanner APK
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'AlokLeadScanner_Reviewed.zip'
+      - '.github/workflows/build-apk.yml'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract Android project
+        shell: bash
+        run: |
+          test -f AlokLeadScanner_Reviewed.zip || { echo 'Upload AlokLeadScanner_Reviewed.zip to the repository root first'; exit 1; }
+          mkdir -p extracted
+          unzip -q AlokLeadScanner_Reviewed.zip -d extracted
+          test -f extracted/AlokLeadScanner/settings.gradle.kts
+          cp -a extracted/AlokLeadScanner/. .
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile debug APK
+        run: gradle assembleDebug --stacktrace --no-daemon
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: AlokLeadScanner-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
